@@ -1,8 +1,10 @@
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.App as Html
-import Animation exposing (px)
+import Animation exposing (px, deg)
 import Mouse
+
+import Utils.List exposing (range)
 
 -- APP
 main : Program Never
@@ -12,18 +14,17 @@ main =
 -- MODEL
 type alias Model =
   { style : Animation.State
-  , position : Position
+  , rotationValue : Int
   }
-
-type Position = Back | Forward
 
 -- INIT
 init : (Model, Cmd Msg)
 init =
-  ( { style =
-      Animation.style
-        [ Animation.translate (px 0.0) (px 0.0) ]
-    , position = Back
+  ( { style = Animation.style
+      [ Animation.translate (px 0.0) (px 0.0)
+      , Animation.rotate (deg 0.0)
+      ]
+    , rotationValue = 0
     }
   , Cmd.none
   )
@@ -34,15 +35,17 @@ subscriptions : Model -> Sub Msg
 subscriptions model =
   Sub.batch
     [ Animation.subscription Animate [model.style]
-    , Mouse.clicks Go
+    , Mouse.moves Go
+    , Mouse.clicks Rotate
     ]
 
 
 -- UPDATE
+type alias MousePosition = { x : Int, y: Int }
+
 type Msg
-  = GoForward
-  | GoBack
-  | Go { x : Int, y: Int }
+  = Go MousePosition
+  | Rotate MousePosition
   | Animate Animation.Msg
 
 update : Msg -> Model -> (Model, Cmd Msg)
@@ -55,62 +58,38 @@ update msg model =
       , Cmd.none
       )
 
-    GoForward ->
+    Go { x, y } ->
       let
         newStyle =
           Animation.interrupt
             [ Animation.to
-                [ Animation.translate (px 200.0) (px 200.0) ]
+              [ Animation.translate (px <| toFloat x) (px <| toFloat y) ]
             ]
             model.style
       in
 
         ( { model |
-            position = Forward,
             style = newStyle
           }
         , Cmd.none
         )
 
-    GoBack ->
+    Rotate { x, y } ->
       let
+        rotationValue = model.rotationValue + 90
         newStyle =
           Animation.interrupt
             [ Animation.to
-                [ Animation.translate (px 0.0) (px 0.0) ]
+              [ Animation.rotate (deg rotationValue) ]
             ]
             model.style
       in
-
         ( { model |
-            position = Back,
             style = newStyle
+          , rotationValue = rotationValue
           }
         , Cmd.none
         )
-    Go { x, y }->
-      let
-        newStyle =
-          Animation.interrupt
-            [ Animation.to
-                [ Animation.translate (px <| toFloat x) (px <| toFloat y) ]
-            ]
-            model.style
-      in
-
-        ( { model |
-            position = Back,
-            style = newStyle
-          }
-        , Cmd.none
-        )
-
-
-range : Int -> Int -> List Int
-range start end =
-  if start == end
-    then [end]
-    else [start] ++ range (start + 1) end
 
 
 -- VIEW
@@ -119,20 +98,20 @@ range start end =
 view : Model -> Html Msg
 view model =
   div
-    [ {-- onClick (if model.position == Back then GoForward else GoBack)
+    [ {-- onClick (if model.style == Back then GoForward else GoBack)
     , --} style
       [ ("width", "1000px")
       , ("height", "1000px")
       ]
     ]
-    ( range 1 100
+    ( range 1 1
       |> List.map (\x -> div
-        (Animation.render model.style ++
+        ( Animation.render model.style ++
           [ style
             [ ("width", "50px")
             , ("height", "50px")
-            , ("background-color", "blue")
-            , ("position", "absolute")
+            , ("background-color", "#6dffff")
+            , ("style", "absolute")
             ]
           ]
         )
