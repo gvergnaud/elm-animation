@@ -4,8 +4,6 @@ import Html.App as Html
 import Animation exposing (px, deg)
 import Mouse
 
-import Utils.List exposing (range)
-
 -- APP
 main : Program Never
 main =
@@ -20,14 +18,19 @@ type alias Model =
 -- INIT
 init : (Model, Cmd Msg)
 init =
-  ( { style = Animation.style
-      [ Animation.translate (px 0.0) (px 0.0)
-      , Animation.rotate (deg 0.0)
+  ( { style = Animation.styleWithEach
+      [ ( Animation.spring { stiffness = 170, damping = 21 }
+        , Animation.translate (px 0.0) (px 0.0)
+        )
+      , ( Animation.spring { stiffness = 400, damping = 30 }
+        , Animation.rotate (deg 0.0)
+        )
       ]
     , rotationValue = 0
     }
   , Cmd.none
   )
+
 
 
 -- SUBSCRIPTIONS
@@ -41,11 +44,9 @@ subscriptions model =
 
 
 -- UPDATE
-type alias MousePosition = { x : Int, y: Int }
-
 type Msg
-  = Go MousePosition
-  | Rotate MousePosition
+  = Go Mouse.Position
+  | Rotate Mouse.Position
   | Animate Animation.Msg
 
 update : Msg -> Model -> (Model, Cmd Msg)
@@ -104,14 +105,14 @@ view model =
       , ("height", "1000px")
       ]
     ]
-    ( range 1 1
+    ( [1..5]
       |> List.map (\x -> div
         ( Animation.render model.style ++
           [ style
             [ ("width", "50px")
             , ("height", "50px")
             , ("background-color", "#6dffff")
-            , ("style", "absolute")
+            , ("position", "absolute")
             ]
           ]
         )
